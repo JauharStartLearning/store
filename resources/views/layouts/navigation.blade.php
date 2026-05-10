@@ -21,6 +21,9 @@
                     <x-nav-link :href="route('cashier.index')" :active="request()->routeIs('cashier.*')">
                         {{ __('Cashier') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
+                        {{ __('Orders') }}
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -76,12 +79,15 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            <x-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
+            <x-responsive-nav-link :href="route('products.index')" :active="request()->routeIs('products.*')">
                 {{ __('Products') }}
-            </x-nav-link>
-            <x-nav-link :href="route('cashier.index')" :active="request()->routeIs('cashier.*')">
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('cashier.index')" :active="request()->routeIs('cashier.*')">
                 {{ __('Cashier') }}
-            </x-nav-link>
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('orders.index')" :active="request()->routeIs('orders.*')">
+                {{ __('Orders') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->

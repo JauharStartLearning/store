@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -25,5 +27,13 @@ Route::middleware('auth')->group(function () {
         return view('cashier.index', compact('products'));
     })->name('cashier.index');
 });
+
+Route::middleware('auth')->group(function () {
+    Route::resource('categories', CategoryController::class);
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+    Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+});
+
+Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
 
 require __DIR__.'/auth.php';

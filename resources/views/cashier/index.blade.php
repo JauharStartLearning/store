@@ -44,8 +44,19 @@
                                  onclick="addToCart({{ $product->id }}, '{{ addslashes($product->name) }}', {{ $product->price }})">
                                 
                                 <div class="h-32 bg-slate-100 relative overflow-hidden flex items-center justify-center">
-                                    <svg class="w-10 h-10 text-slate-300 group-hover:scale-110 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    @if($product->stock <= 5)
+                                    <div class="h-32 bg-slate-100 relative overflow-hidden flex items-center justify-center">
+                                        @if($product->image)
+                                            <img src="{{ Storage::url($product->image) }}" 
+                                                alt="{{ $product->name }}" 
+                                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                                        @else
+                                            <svg class="w-10 h-10 text-slate-300 ..." fill="none" ...>...</svg>
+                                        @endif
+                                        
+                                        @if($product->stock <= 5)
+                                            <span class="absolute top-2 right-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-full">Sisa {{ $product->stock }}</span>
+                                        @endif
+                                    </div>                                    @if($product->stock <= 5)
                                         <span class="absolute top-2 right-2 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-1 rounded-full">Sisa {{ $product->stock }}</span>
                                     @endif
                                 </div>
@@ -388,29 +399,46 @@
 
         document.getElementById('confirm-payment-btn')?.addEventListener('click', async function() {
             let paidAmount = parseFloat(document.getElementById('payment-amount').value);
+            
             if(isNaN(paidAmount) || paidAmount < currentTotal) {
                 showToast("Uang yang dimasukkan kurang!", "error");
-                document.getElementById('payment-amount').focus();
                 return;
             }
-            
+
             const btn = this;
-            const originalHTML = btn.innerHTML;
-            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...`;
             btn.disabled = true;
 
-            // Simulasi API Call
-            setTimeout(() => {
-                let change = paidAmount - currentTotal;
-                showToast(`Transaksi Berhasil! Kembalian: Rp ${formatRupiah(change)}`);
-                cart = [];
-                renderCart();
-                closePaymentModal();
-                btn.innerHTML = originalHTML;
-                btn.disabled = false;
-            }, 800);
-        });
+            try {
+                const response = await fetch("{{ route('checkout.store') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        cart: cart,
+                        total_price: currentTotal
+                    })
+                });
 
+                const result = await response.json();
+
+                if (response.ok) {
+                    showToast(`Transaksi Berhasil! Kembalian: Rp ${formatRupiah(paidAmount - currentTotal)}`);
+                    cart = [];
+                    renderCart();
+                    closePaymentModal();
+                    // Opsional: Reload halaman untuk update sisa stok di UI
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showToast(result.message, "error");
+                }
+            } catch (error) {
+                showToast("Gagal menghubungi server", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        });
         // Search dengan UX yang lebih baik
         document.getElementById('search').addEventListener('keyup', function(e) {
             let keyword = this.value.toLowerCase().trim();

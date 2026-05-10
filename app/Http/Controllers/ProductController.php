@@ -2,22 +2,27 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
 class ProductController extends Controller
 {
     // ✅ READ (list)
     public function index()
     {
         $products = Product::with('category')->get();
-        return view('products.index', compact('products'));
+        $categories = Category::all();
+
+        return view('products.index', compact('products', 'categories'));
     }
 
     // ✅ CREATE (form)
     public function create()
     {
-        return view('products.create');
+        $categories = Category::all();
+        return view('products.create', compact('categories'));
     }
 
     // ✅ STORE (simpan data)
@@ -27,19 +32,27 @@ class ProductController extends Controller
             'name' => 'required',
             'price' => 'required|numeric',
             'stock' => 'required|integer',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // validasi gambar
+            'category_id' => 'required'
         ]);
 
-        Product::create($request->all());
+        $data = $request->all();
+        $data['slug'] = Str::slug($request->name);
 
-        return redirect()->route('products.index')
-            ->with('success', 'Produk berhasil ditambahkan');
+        if ($request->hasFile('image')) {
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        Product::create($data);
+
+        return redirect()->route('products.index')->with('success', 'Produk berhasil ditambahkan');
     }
-
     // ✅ EDIT (form edit)
     public function edit($id)
     {
         $product = Product::findOrFail($id);
-        return view('products.edit', compact('product'));
+        $categories = Category::all();
+        return view('products.edit', compact('product', 'categories'));
     }
 
     // ✅ UPDATE (update data)
@@ -49,13 +62,24 @@ class ProductController extends Controller
             'name' => 'required',
             'price' => 'required|numeric',
             'stock' => 'required|integer',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
         $product = Product::findOrFail($id);
-        $product->update($request->all());
+        $data = $request->all();
+        $data['slug'] = Str::slug($request->name);
 
-        return redirect()->route('products.index')
-            ->with('success', 'Produk berhasil diupdate');
+        if ($request->hasFile('image')) {
+            // Hapus gambar lama jika ada
+            if ($product->image) {
+                Storage::disk('public')->delete($product->image);
+            }
+            $data['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        $product->update($data);
+
+        return redirect()->route('products.index')->with('success', 'Produk berhasil diupdate');
     }
 
     // ✅ DELETE
